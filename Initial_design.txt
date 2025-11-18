@@ -1,0 +1,31 @@
+IFundaClient - talks to Funda API, returns raw listing C# DTOs of the JSON. 
+
+Methods
+    - GetAllObjects(FundaSearchQuery query, CancellationToken token) -> [FundaObjectDto]
+
+    FundaSearchQuery - can store the SearchPath (/amsterdam/ or /amsterdam/tuin/), Type (koop), PageSize
+
+//end IFundaClient
+
+IMakelaarStatsService - takes lists of listings, groups by makelaar, and calculated stats.
+
+Methods
+    - GetTopMakelaarByObjectCount([FundaObjectDto] objects, int topN) -> [MakelaarStat]
+
+//end IMakelaarStatsService
+
+FundaObjectDto -> maps exactly to JSON API
+
+//end FundaObjectDto
+
+MakelaarStat -> object that stores name string and number of objects
+
+
+App workflow:
+    - Main/Program.cs:
+        - Creates two IFundaClients
+            - one searches /amsterdam/
+            - one searches /amsterdam/tuin/
+        - calls IMakelaarStatsService for each client output
+        - renders a simple top 10 table to console
+
