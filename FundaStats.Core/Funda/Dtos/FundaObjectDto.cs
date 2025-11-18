@@ -1,4 +1,4 @@
-namespace FundaStats.Core;
+namespace FundaStats.Core.Funda.Dtos;
 
 public sealed class FundaObjectDto
 {
