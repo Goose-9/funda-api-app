@@ -66,7 +66,7 @@ public sealed class FundaClient : IFundaClient
             totalPages = dto.Paging.AantalPaginas;
             currentPage++;
 
-            // await Task.Delay(600, token);
+            await Task.Delay(600, token);
         } while (currentPage <= totalPages);
 
         return allObjects;
