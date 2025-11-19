@@ -34,50 +34,39 @@ public sealed class FundaClient : IFundaClient
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
 
-            using var response = await _httpClient.SendAsync(request, token);
+            using var response = await _httpClient.GetAsync(url, token);
 
+            // I thought it would return 429 but it appears to be 401 in testing
             if (response.StatusCode == (HttpStatusCode)401)
             {
-                // rate limit
-                await Task.Delay(TimeSpan.FromSeconds(2), token);
-                using var retryResponse = await _httpClient.SendAsync(request, token);
-
-                if (!retryResponse.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException(
-                        $"Funda API rate limited and retry failed: {(int)retryResponse.StatusCode} {retryResponse.ReasonPhrase}"
-                    );
-                }
-
-                var retryDto =
-                    await response.Content.ReadFromJsonAsync<FundaResponseDto>(token)
-                    ?? throw new InvalidOperationException(
-                        "Failed to deserialize Funda response (retry)."
-                    );
-
-                allObjects.AddRange(retryDto.Objects);
-                totalPages = retryDto.Paging.AantalPaginas;
+                // request cap reached
+                throw new HttpRequestException(
+                    "Received 401 Unauthorized from Funda API. "
+                        + "The usage limit has been exceeded. "
+                        + "Please try again later."
+                );
             }
-            else
+
+            if (!response.IsSuccessStatusCode)
             {
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException(
-                        $"Funda API request failed: {(int)response.StatusCode} {response.ReasonPhrase}"
-                    );
-                }
-
-                var dto =
-                    await response.Content.ReadFromJsonAsync<FundaResponseDto>(token)
-                    ?? throw new InvalidOperationException("Failed to deserialize Funda response.");
-
-                allObjects.AddRange(dto.Objects);
-                totalPages = dto.Paging.AantalPaginas;
+                throw new HttpRequestException(
+                    $"Funda API request failed: {(int)response.StatusCode} {response.ReasonPhrase}"
+                );
             }
 
+            var dto =
+                await response.Content.ReadFromJsonAsync<FundaResponseDto>(token)
+                ?? throw new InvalidOperationException("Failed to deserialize Funda response.");
+
+            if (dto.Objects is not null)
+            {
+                allObjects.AddRange(dto.Objects);
+            }
+
+            totalPages = dto.Paging.AantalPaginas;
             currentPage++;
 
-            await Task.Delay(600, token);
+            // await Task.Delay(600, token);
         } while (currentPage <= totalPages);
 
         return allObjects;
