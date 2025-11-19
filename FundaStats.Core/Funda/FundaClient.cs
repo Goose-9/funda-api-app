@@ -1,8 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Net.Http.Json;
-using System.Reflection.Metadata.Ecma335;
-using System.Text.Json;
 using FundaStats.Core.Funda.Dtos;
 
 namespace FundaStats.Core.Funda;
@@ -35,11 +32,7 @@ public sealed class FundaClient : IFundaClient
         {
             var url = BuildUrl(query, currentPage);
 
-            Console.WriteLine($"URL built: {url}\n");
-
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-            Console.WriteLine($"Request built: {request}\n");
 
             using var response = await _httpClient.SendAsync(request, token);
 
@@ -84,7 +77,7 @@ public sealed class FundaClient : IFundaClient
 
             currentPage++;
 
-            await Task.Delay(700, token);
+            await Task.Delay(600, token);
         } while (currentPage <= totalPages);
 
         return allObjects;
