@@ -10,7 +10,7 @@ public sealed class MakelaarStatsService : IMakelaarStatsService
     )
     {
         return objects
-            .Where(obj => !string.IsNullOrWhiteSpace(obj.MakelaarNaam))
+            .Where(obj => obj.MakelaarId != 0 && !string.IsNullOrWhiteSpace(obj.MakelaarNaam))
             .GroupBy(obj => obj.MakelaarId)
             .Select(group => new MakelaarStat
             {
