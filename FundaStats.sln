@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FundaStats.App", "FundaStat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FundaStats.Core", "FundaStats.Core\FundaStats.Core.csproj", "{C7953300-55F6-49BA-9301-09BDEB7171E0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FundaStats.Tests", "FundaStats.Tests\FundaStats.Tests.csproj", "{D49F934A-C2F7-4CE4-A396-35D7E24BBC0E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{C7953300-55F6-49BA-9301-09BDEB7171E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7953300-55F6-49BA-9301-09BDEB7171E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7953300-55F6-49BA-9301-09BDEB7171E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D49F934A-C2F7-4CE4-A396-35D7E24BBC0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D49F934A-C2F7-4CE4-A396-35D7E24BBC0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D49F934A-C2F7-4CE4-A396-35D7E24BBC0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D49F934A-C2F7-4CE4-A396-35D7E24BBC0E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
