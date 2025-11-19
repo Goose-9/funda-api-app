@@ -1,18 +1,130 @@
-# funda-api-app
+# 📘 Funda API Assignment — Real Estate Stats
 
+This project implements the assignment from the Funda Partner API exercise.
+It retrieves real-estate listings for Amsterdam and determines which makelaars (real estate agents) have the most properties listed for sale.
 
+Two rankings are produced:
+
+1. **Top 10 makelaars that are selling houses (koop) in Amsterdam**
+
+2. **Top 10 makelaars that are selling houses (koop) with a graden (tuin) in Amsterdam**
+
+The project is written in C# (.NET 8).
+
+## 📦 How to Run
+
+**1. Clone the repository**
+``` bash
+git clone https://github.com/Goose-9/funda-api-app
+cd funda-api-app
+```
+
+**2. Add the API key**
+
+Create a `.env` file inside `FundaStats.App/`:
+``` ini
+FUNDA_API_KEY=your-funda-key-here
+```
+
+**3. Run the app**
+``` bash
+dotnet run --project FundaStats.App
+```
+The console will display two formatted Top-10 tables.
+
+## 🧱 Architecture Overview
+I tried to split the solution into three layers (or four if you include tests), each with a clear responsibility: 
+
+``` lua
+FundaStats.Core/
+ ├── Funda/          <-- HTTP client + DTOs + search query
+ └── Stats/          <-- Pure logic: grouping & ranking makelaars
+
+FundaStats.App/      <-- Console app: orchestration + output
+FundaStats.Tests/    <-- Unit tests for stats
+```
+
+### Funda Layer (Data Access)
+- `FundaClient` fetches all the pages of listings using the API. 
+- The API response is then deserialized into small DTOs:
+    - `FundaResponseDTO`
+    - `FundaObjectTO`
+    - `PagingInfo`
+- The client does not contain presentation logic or stats logic
+- The client also runs a simple inline rate limiting delay (`Task.Delay`) between page requests. The reason why I did not create a dedicated rate limiter component is explained in [Rate-Limiting](#rate-limiting)
+
+### Stats Layer (Logic)
+- `MakelaarStatsService` calculates the Top N makelaars, which in this case is 10. 
+- I group the objects based on the unique `MakelaarId` and the names come from the first item in each group. 
+
+### App Layer (Console Output)
+- Loads the API key from `.env`
+- Creates and calls the Funda client
+- Calls the stats service for each query.
+- Prints the final tables
+
+### Extra Test Layer
+- I wrote some simple sanity tests for myself. I did this to verify that my logic in the stats service was correct. 
+
+## 🌐 Funda API Behaviour
+
+### Page Size
 Through testing, I noticed that the page size parameter did not return more than 25 objects from the API, thus I couldn't increase the page size to reduce the number of requests. The page sizes accepted (returned the same number of objects) by the API is 0-25 with a default of 15 when the parameter is omitted. Therefore I have decided to leave it at 25 for my implementation. 
 
+### Rate-limiting: 
+After exceeding the usage limits of 100 requests per minute, the API appears to start returning 401 Unauthorized. In this case, the client stops with a clear error instead of retrying, because retrying will not succeed until the limit resets. 
 
-Rate-limiting: 
+So to mitigate this and keep the requests below 100 per minute, I used a small Task delay of 600ms between page requests. This way the app should not exceed the API's limits and thus will finish execution as intended. 
 
-As the API limited me to only 100 requests per minute, my first idea to limit the request rate was to simply use a Task delay for 600-700ms to prevent the requests from hitting the cap. 
+In a more advanced setup, this rate limiting behaviour could be abstracted into a rate limiting component or layer, which would allow different algorithms to be swapped out without changing the `FundaClient` itself. 
 
-After exceeding the usage limits, the API appears to start returning 401 Unauthorized. In this case, the client stops with a clear error instead of retrying, because retrying will not succeed until the limit resets. 
+However, this assignment did not need something that complex, so i tried to keep it simple, using a single, fixed `Task.Delay` inside the client. This let me keep the requests below the limit while keeping the implementation easier to follow.
 
-So to mitigate this, I used the small delay between page requests as mentioned before. 
+## 🧪 Testing
+Unit tests are located in: 
+``` 
+FundaStats.Tests/Stats/ 
+```
 
-AI: 
+I wrote simple tests to verify that the Stats Service logic was correct, but this can obviously be extended to be more conclusive. 
+
+## 📊 Output Example
+The console prints two labels such as: 
+```
+Loading Funda API client...
+Fetching Funda data... this may take a while.
+
+Amsterdam: fetched 5308 objects.
+
+Top 10 makelaars in Amsterdam (koop)
+------------------------------------
+#   ID         Makelaar                                  Objects
+1   24648      Heeren Makelaars                              164
+2   24607      KRK Makelaars Amsterdam                       107
+3   24067      Broersma Wonen                                104
+4   24592      Ramón Mossel Makelaardij o.g. B.V.             99
+5   24705      Eefje Voogd Makelaardij                        92
+6   24605      Hallie & Van Klooster Makelaardij              86
+8   24131      De Graaf & Groot Makelaars                     76
+9   60557      Linger OG Makelaars en Taxateurs               74
+10  24079      Makelaardij Van der Linden Amsterdam           74
+
+Amsterdam + tuin: fetched 1048 objects.
+Top 10 makelaars in Amsterdam (koop + tuin)
+-------------------------------------------
+#   ID         Makelaar                                  Objects
+1   24067      Broersma Wonen                                 28
+2   24648      Heeren Makelaars                               27
+4   24599      DSTRCT Amsterdam                               20
+5   24131      De Graaf & Groot Makelaars                     19
+6   24848      KIJCK. makelaars Amsterdam                     18
+7   24065      Carla van den Brink B.V.                       17
+8   24607      KRK Makelaars Amsterdam                        16
+9   24630      Keizerskroon Makelaars - Certified Ex...       14
+10  12285      Makelaarsland                                  14
+```
+
+## 🤖AI Usage: 
 
 1. I used ChatGPT to generate a BuildUrl function for my FundaClient class. I did this because it was a simple string building function, which is trivial to make once I knew the url string I wanted and the variables that I had. 
 
@@ -33,6 +145,10 @@ private string BuildUrl(FundaSearchQuery query, int page)
 ```
 
 2. I used ChatGPT to generate console messages and to make the output table pretty. This is documented in ```Program.cs```, but it is the extra helper functions below the try-catch. I did this to make the output more readable, without having to waste a lot of my time to do so.
+
+3. I used ChatGPT to generate some of the visuals seen in the README file, namely the icons, and the visual layer separation under the Architecture Overview header. My reasoning behind the visual is that I believe it helps to reinforce my explanation underneath, and my reasoning for the icons is that it is fun. 😀
+
+All generated code was reviewed, modified, or rewritten where appropriate. 
 
 
 
