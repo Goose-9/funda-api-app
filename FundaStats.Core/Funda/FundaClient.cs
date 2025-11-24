@@ -1,17 +1,20 @@
 using System.Net;
 using System.Net.Http.Json;
 using FundaStats.Core.Funda.Dtos;
+using FundaStats.Core.RateLimiting;
 
 namespace FundaStats.Core.Funda;
 
 public sealed class FundaClient : IFundaClient
 {
     private readonly HttpClient _httpClient;
+    private readonly IRateLimiter _rateLimiter;
     private readonly string _apiKey;
 
-    public FundaClient(HttpClient httpClient, string apiKey)
+    public FundaClient(HttpClient httpClient, IRateLimiter rateLimiter, string apiKey)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _rateLimiter = rateLimiter ?? throw new ArgumentNullException(nameof(rateLimiter));
         _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
     }
 
@@ -31,6 +34,8 @@ public sealed class FundaClient : IFundaClient
         do
         {
             var url = BuildUrl(query, currentPage);
+
+            await _rateLimiter.WaitAsync(token);
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
 
@@ -65,8 +70,6 @@ public sealed class FundaClient : IFundaClient
 
             totalPages = dto.Paging.AantalPaginas;
             currentPage++;
-
-            await Task.Delay(600, token);
         } while (currentPage <= totalPages);
 
         return allObjects;
