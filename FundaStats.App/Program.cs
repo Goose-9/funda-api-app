@@ -1,5 +1,6 @@
 ﻿using DotNetEnv;
 using FundaStats.Core.Funda;
+using FundaStats.Core.RateLimiting;
 using FundaStats.Core.Stats;
 
 Env.Load("FundaStats.App/.env");
@@ -17,7 +18,14 @@ Console.WriteLine("Loading Funda API client...");
 
 using var httpClient = new HttpClient { BaseAddress = new Uri("http://partnerapi.funda.nl/") };
 
-var fundaClient = new FundaClient(httpClient, apiKey);
+// 1. Fixed delay limiter
+// IRateLimiter rateLimiter = new FixedDelayRateLimiter(TimeSpan.FromMilliseconds(600));
+
+// 2. Token bucket limiter
+int maxRequests = 100;
+IRateLimiter rateLimiter = new TokenBucketRateLimiter(maxRequests);
+
+var fundaClient = new FundaClient(httpClient, rateLimiter, apiKey);
 var statsService = new MakelaarStatsService();
 
 Console.WriteLine("Fetching Funda data... this may take a while.\n");

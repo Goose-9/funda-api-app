@@ -71,22 +71,64 @@ FundaStats.Tests/    <-- Unit tests for stats
 ### Page Size
 Through testing, I noticed that the page size parameter did not return more than 25 objects from the API, thus I couldn't increase the page size to reduce the number of requests. The page sizes accepted (returned the same number of objects) by the API is 0-25 with a default of 15 when the parameter is omitted. Therefore I have decided to leave it at 25 for my implementation. 
 
-### Rate-limiting: 
-After exceeding the usage limits of 100 requests per minute, the API appears to start returning 401 Unauthorized. In this case, the client stops with a clear error instead of retrying, because retrying will not succeed until the limit resets. 
+## 🧭 Rate-limiting: 
+After exceeding the usage limit of 100 requests per minute, the API appears to start returning 401 Unauthorized. In this case, the client stops with a clear error instead of retrying, because retrying will not succeed until the limit resets. 
 
-So to mitigate this and keep the requests below 100 per minute, I used a small Task delay of 600ms between page requests. This way the app should not exceed the API's limits and thus will finish execution as intended. 
+So to avoid this error response, I created a dedicated rate limiting layer. This layer is fully separate from the client and is built around one central abstraction: 
 
-In a more advanced setup, this rate limiting behaviour could be abstracted into a rate limiting component or layer, which would allow different algorithms to be swapped out without changing the `FundaClient` itself. 
+``` C#
+public interface IRateLimiter
+{
+    ValueTask WaitAsync(CancellationToken cancellationToken = default);
+}
+```
+To ensure that all outgoing requests respect the active rate limiting algorithm, every request to the Funda API starts by calling: 
+``` C#
+await _rateLimiter.WaitAsync(token);
+```
 
-However, this assignment did not need something that complex, so i tried to keep it simple, using a single, fixed `Task.Delay` inside the client. This let me keep the requests below the limit while keeping the implementation easier to follow.
+### Implementations
+*To switch between implementations, comment out the lines below from ```Program.cs``` and uncomment the one you would like to use.*
+1. FixedDelayRateLimiter (Simple Example)
+
+    The simplest implementation, which uses a constant delay between requests: 
+    ``` C#
+    new FixedDelayRateLimiter(TimeSpan.FromMilliseconds(600));
+    ```
+    This guarantees at most 100 requests/minute by spacing requests 600 ms apart. It is easy to understand and it is useful to demonstrate how easy it is to extend the base interface with more algorithms. 
+
+2. TokenBucketRateLimiter (Primary Algorithm)
+
+    My main implementation uses a token bucket that allows up to N tokens per minute, where each token allows one request to be sent.
+
+    The bucket starts empty and slowly fill with tokens over time (e.g., 100 tokens/minute ≈ 1.667 tokens/second). If a token is available, a request is sent immediately, and if not, the caller waits until a token has been accumulated, before consuming the token and sending. 
+
+    ``` C#
+    new TokenBucketRateLimiter(maxTokensPerMinute: 100);
+    ```
+    This allows a smoother request pattern while achieving [higher throughput](#performance) than fixed delays. 
+
+Thanks to the ```IRateLimiter``` interface, any new implementation is easy to add and use. 
+
+### Performance
+Using the same Funda dataset (214 pages + 42 pages = 256 pages):
+
+| Rate Limiter | Configuration      | Duration       |
+| ------------ | ------------------ | -------------- |
+| Fixed Delay  | 600 ms per request | **3 min 20 s** |
+| Token Bucket | 100 tokens/minute  | **2 min 33 s** |
+
+Token bucket is ~23% faster whhile still staying safely withing the API's limits. 
 
 ## 🧪 Testing
 Unit tests are located in: 
 ``` 
-FundaStats.Tests/Stats/ 
+FundaStats.Tests
+    - Stats
+    - RateLimiting
 ```
 
-I wrote simple tests to verify that the Stats Service logic was correct, but this can obviously be extended to be more conclusive. 
+I wrote simple tests to verify that the Stats Service logic and Token Bucket logic was correct, but this can obviously be extended to be more conclusive. 
 
 ## 📊 Output Example
 The console prints two labels such as: 
