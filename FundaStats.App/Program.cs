@@ -19,7 +19,11 @@ Console.WriteLine("Loading Funda API client...");
 using var httpClient = new HttpClient { BaseAddress = new Uri("http://partnerapi.funda.nl/") };
 
 // 1. Fixed delay limiter
-IRateLimiter rateLimiter = new FixedDelayRateLimiter(TimeSpan.FromMilliseconds(600));
+// IRateLimiter rateLimiter = new FixedDelayRateLimiter(TimeSpan.FromMilliseconds(600));
+
+// 2. Token bucket limiter
+int maxRequests = 100;
+IRateLimiter rateLimiter = new TokenBucketRateLimiter(maxRequests);
 
 var fundaClient = new FundaClient(httpClient, rateLimiter, apiKey);
 var statsService = new MakelaarStatsService();
