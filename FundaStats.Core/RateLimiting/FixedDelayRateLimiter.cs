@@ -6,8 +6,7 @@ public sealed class FixedDelayRateLimiter : IRateLimiter
 
     public FixedDelayRateLimiter(TimeSpan delay)
     {
-        if (delay < TimeSpan.Zero)
-            throw new ArgumentOutOfRangeException(nameof(delay));
+        ArgumentOutOfRangeException.ThrowIfLessThan(delay, TimeSpan.Zero);
 
         _delay = delay;
     }
