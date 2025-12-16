@@ -1,15 +1,12 @@
-# 📘 Funda API Assignment — Real Estate Stats
+# 📘 Funda API Client — Real Estate Stats
 
-This project implements the assignment from the Funda Partner API exercise.
-It retrieves real-estate listings for Amsterdam and determines which makelaars (real estate agents) have the most properties listed for sale.
+A C# (.NET 8) console application that integrates with the **Funda Partner API** to retrieve real-estate listings for Amsterdam and compute which **makelaars** (real estate agents) have the most properties listed for sale.
 
 Two rankings are produced:
 
-1. **Top 10 makelaars that are selling houses (koop) in Amsterdam**
+1. **Top 10 makelaars** with listings for sale (**koop**) in Amsterdam
 
-2. **Top 10 makelaars that are selling houses (koop) with a graden (tuin) in Amsterdam**
-
-The project is written in C# (.NET 8).
+2. **Top 10 makelaars** with listings for sale (**koop**) that include a **garden (tuin)** in Amsterdam
 
 ## 📦 How to Run
 
@@ -51,7 +48,6 @@ FundaStats.Tests/    <-- Unit tests for stats
     - `FundaObjectTO`
     - `PagingInfo`
 - The client does not contain presentation logic or stats logic
-- The client also runs a simple inline rate limiting delay (`Task.Delay`) between page requests. The reason why I did not create a dedicated rate limiter component is explained in [Rate-Limiting](#rate-limiting)
 
 ### Stats Layer (Logic)
 - `MakelaarStatsService` calculates the Top N makelaars, which in this case is 10. 
